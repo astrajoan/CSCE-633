@@ -127,7 +127,7 @@ def plotScatter(dataset,save):
         plt.savefig('Scatter plot.png',dpi=300)
         
 
-def normalize(dataset):
+def normalizeParams(dataset):
     sl = [data.sl for data in dataset]
     sw = [data.sw for data in dataset]
     pl = [data.pl for data in dataset]
@@ -137,6 +137,7 @@ def normalize(dataset):
     swMean = np.mean(sw)
     plMean = np.mean(pl)
     pwMean = np.mean(pw)
+    mean = [slMean,swMean,plMean,pwMean]
     
     #print("{},{},{},{}".format(slMean,swMean,plMean,pwMean))
     
@@ -144,6 +145,7 @@ def normalize(dataset):
     swStd = np.std(sw)
     plStd = np.std(pl)
     pwStd = np.std(pw)
+    std = [slStd,swStd,plStd,pwStd]
     
     #print("{},{},{},{}".format(slStd,swStd,plStd,pwStd))
     
@@ -153,7 +155,17 @@ def normalize(dataset):
         dataset[i].pl = (dataset[i].pl-plMean)/plStd
         dataset[i].pw = (dataset[i].pw-pwMean)/pwStd
     
-    return dataset        
+    return dataset, mean, std
+
+
+def normalize(testset,mean,std):
+    for i in range(len(testset)):
+        testset[i].sl = (testset[i].sl-mean[0])/std[0]
+        testset[i].sw = (testset[i].sw-mean[1])/std[1]
+        testset[i].pl = (testset[i].pl-mean[2])/std[2]
+        testset[i].pw = (testset[i].pw-mean[3])/std[3]
+    
+    return testset
 
 
 class kNN(object):
@@ -196,7 +208,7 @@ class kNN(object):
             for data in dataset:
                 dataSample = np.array([data.sl,data.sw,data.pl,data.pw])
                 L0 = testSample-dataSample
-                L0 = [1 if i == 0 else 0 for i in L0]
+                L0 = [1 if i != 0 else 0 for i in L0]
                 testDistance.append(sum(L0))
             distances.append(testDistance)
         
@@ -266,15 +278,14 @@ datasetTest = importFile(testSet)
 '''============================== Validation Set =============================='''
 
 Acc = []
-
 # =============================================================================
-# kNNClassfier = kNN(7)
-#     
-# datasetTrain = normalize(datasetTrain)
+# #datasetTrain, mean, std = normalizeParams(datasetTrain) # Need to normalize the data
 # 
-# datasetValidation = normalize(datasetValidation)
+# #datasetValidation = normalize(datasetValidation,mean,std)
 # 
-# distance = kNNClassfier.calcEucDist(datasetValidation,datasetTrain)
+# kNNClassfier = kNN(6)
+# 
+# distance = kNNClassfier.calcL0Norm(datasetValidation,datasetTrain)
 #         
 # idxNN = kNNClassfier.findKNN(distance)
 # 
@@ -291,9 +302,9 @@ Acc = []
 # print(sum(diff)/len(diff))
 # =============================================================================
 
-datasetTrain = normalize(datasetTrain) # Need to normalize the data
+#datasetTrain, mean, std = normalizeParams(datasetTrain) # Need to normalize the data
 
-datasetValidation = normalize(datasetValidation)
+#datasetValidation = normalize(datasetValidation,mean,std)
 
 for i in range(1,90,2):
     kNNClassfier = kNN(i)
@@ -326,15 +337,15 @@ plt.xlim((0,20))
 plt.xlabel('K')
 plt.ylabel('Accuracy')
 plt.grid(axis='both')
-plt.title('K Nearest Neighbor Validation Accuracy')
+plt.title('K Nearest Neighbor Validation Accuracy No Normalization')
 plt.subplot(2,1,2)
 plt.plot(range(1,90,2),Acc,linestyle='dashed',marker='o',color='black',markerfacecolor='red')
 plt.xlim((-1,91))
 plt.xlabel('K')
 plt.ylabel('Accuracy')
 plt.grid(axis='both')
-plt.title('K Nearest Neighbor Validation Accuracy')
-plt.savefig('Validation Accuracy.png',dpi=100)
+plt.title('K Nearest Neighbor Validation Accuracy No Normalization')
+plt.savefig('Validation Accuracy No Norm.png',dpi=100)
 
 
 
@@ -344,7 +355,7 @@ plt.savefig('Validation Accuracy.png',dpi=100)
 # =============================================================================
 # AccTest = []
 # 
-# datasetTest = normalize(datasetTest)
+# datasetTest = normalize(datasetTest,mean,std)
 # 
 # for i in range(1,90,2):
 #     kNNClassfier = kNN(i)
