@@ -2,7 +2,7 @@
 """
 Created on Fri Sep  4 15:03:17 2020
 
-@author: yvonn
+@author: (AstraJoan) Ziqi Zhao
 """
 
 import csv
@@ -113,9 +113,12 @@ def plotScatter(dataset,save):
     for i in range(ncol):
         for j in range(i+1,ncol+1):
             plt.subplot(nrow,ncol,n)
-            plt.scatter([np.array(setosa)[:,i]],[np.array(setosa)[:,j]],marker='.',color='blue',label='Setosa')
-            plt.scatter([np.array(versicolor)[:,i]],[np.array(versicolor)[:,j]],marker='.',color='red',label='Versicolor')
-            plt.scatter([np.array(virginica)[:,i]],[np.array(virginica)[:,j]],marker='.',color='green',label='Virginica')
+            plt.scatter([np.array(setosa)[:,i]],[np.array(setosa)[:,j]],marker='.',
+                        color='blue',label='Setosa')
+            plt.scatter([np.array(versicolor)[:,i]],[np.array(versicolor)[:,j]],marker='.',
+                        color='red',label='Versicolor')
+            plt.scatter([np.array(virginica)[:,i]],[np.array(virginica)[:,j]],marker='.',
+                        color='green',label='Virginica')
             plt.xlabel(feats[i])
             plt.ylabel(feats[j])
             plt.grid(axis='both')
@@ -127,7 +130,7 @@ def plotScatter(dataset,save):
         plt.savefig('Scatter plot.png',dpi=300)
         
 
-def normalize(dataset):
+def normalizeParams(dataset):
     sl = [data.sl for data in dataset]
     sw = [data.sw for data in dataset]
     pl = [data.pl for data in dataset]
@@ -137,6 +140,7 @@ def normalize(dataset):
     swMean = np.mean(sw)
     plMean = np.mean(pl)
     pwMean = np.mean(pw)
+    mean = [slMean,swMean,plMean,pwMean]
     
     #print("{},{},{},{}".format(slMean,swMean,plMean,pwMean))
     
@@ -144,6 +148,7 @@ def normalize(dataset):
     swStd = np.std(sw)
     plStd = np.std(pl)
     pwStd = np.std(pw)
+    std = [slStd,swStd,plStd,pwStd]
     
     #print("{},{},{},{}".format(slStd,swStd,plStd,pwStd))
     
@@ -153,7 +158,17 @@ def normalize(dataset):
         dataset[i].pl = (dataset[i].pl-plMean)/plStd
         dataset[i].pw = (dataset[i].pw-pwMean)/pwStd
     
-    return dataset        
+    return dataset, mean, std
+
+
+def normalize(testset,mean,std):
+    for i in range(len(testset)):
+        testset[i].sl = (testset[i].sl-mean[0])/std[0]
+        testset[i].sw = (testset[i].sw-mean[1])/std[1]
+        testset[i].pl = (testset[i].pl-mean[2])/std[2]
+        testset[i].pw = (testset[i].pw-mean[3])/std[3]
+    
+    return testset
 
 
 class kNN(object):
@@ -196,7 +211,7 @@ class kNN(object):
             for data in dataset:
                 dataSample = np.array([data.sl,data.sw,data.pl,data.pw])
                 L0 = testSample-dataSample
-                L0 = [1 if i == 0 else 0 for i in L0]
+                L0 = [1 if i != 0 else 0 for i in L0]
                 testDistance.append(sum(L0))
             distances.append(testDistance)
         
@@ -210,7 +225,8 @@ class kNN(object):
             testSample = np.array([test.sl,test.sw,test.pl,test.pw])
             for data in dataset:
                 dataSample = np.array([data.sl,data.sw,data.pl,data.pw])
-                testDistance.append(testSample.dot(dataSample)/(np.linalg.norm(testSample)*np.linalg.norm(dataSample)))
+                testDistance.append
+                (testSample.dot(dataSample)/(np.linalg.norm(testSample)*np.linalg.norm(dataSample)))
             distances.append(testDistance)
         
         return distances
@@ -265,23 +281,20 @@ datasetTest = importFile(testSet)
 
 Acc = []
 
-datasetTrain = normalize(datasetTrain) # Need to normalize the data
+datasetTrain, mean, std = normalizeParams(datasetTrain) # Need to normalize the data
 
-datasetValidation = normalize(datasetValidation)
+datasetValidation = normalize(datasetValidation,mean,std)
 
 for i in range(1,90,2):
     kNNClassfier = kNN(i)
 
     distance = kNNClassfier.calcEucDist(datasetValidation,datasetTrain)
-        
     idxNN = kNNClassfier.findKNN(distance)
-    
     classPredictVal = kNNClassfier.predictClass(datasetTrain,idxNN)
     
     classVal = [val.label for val in datasetValidation]
     
     diff = [1 if i == j else 0 for i,j in zip(classVal,classPredictVal)]
-    
     Acc.append(sum(diff)/len(diff))
     
 print(Acc)
@@ -299,19 +312,15 @@ plt.title('K Nearest Neighbor Validation Accuracy')
 
 AccTest = []
 
-datasetTest = normalize(datasetTest)
+datasetTest = normalize(datasetTest,mean,std)
 
 kNNClassfier = kNN(1)
-
 distance = kNNClassfier.calcEucDist(datasetTest,datasetTrain)
-    
 idxNN = kNNClassfier.findKNN(distance)
-
 classPredictTest = kNNClassfier.predictClass(datasetTrain,idxNN)
 
 classTest = [test.label for test in datasetTest]
 
 diff = [1 if i == j else 0 for i,j in zip(classTest,classPredictTest)]
-
 AccTest.append(sum(diff)/len(diff))
 
